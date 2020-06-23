@@ -1,0 +1,6 @@
+- Apagar tudo menos os ficheiros .wsdl, .xsd, soapcpp2.exe e wsdl2h.exe (na pasta win64)
+- Executar o comando: wsdl2h -o CCMovelDigitalSignature.h CCMovelDigitalSignature.wsdl
+- Executar o comando: soapcpp2 -j -r -CL CCMovelDigitalSignature.h -I../..;../../import;../../custom
+- Executar o comando: g++ -o exampleOriginal exampleOriginal.cpp soapC.cpp soapBasicHttpBinding_USCORECCMovelSignatureProxy.cpp ../../stdsoap2.cpp -I../..
+
+Estou a usar o soapH.h para ver as cenas.

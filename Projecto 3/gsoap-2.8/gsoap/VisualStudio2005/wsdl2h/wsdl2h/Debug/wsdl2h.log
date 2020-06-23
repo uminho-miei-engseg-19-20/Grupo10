@@ -1,0 +1,61 @@
+﻿  Parsing WSDL and Schema definitions
+  soapcpp2: using both options -C and -S omits client/server code
+  
+  **  The gSOAP code generator for C and C++, soapcpp2 release 2.8.103
+  **  Copyright (C) 2000-2020, Robert van Engelen, Genivia Inc.
+  **  All Rights Reserved. This product is provided "as is", without any warranty.
+  **  The soapcpp2 tool and its generated software are released under the GPL.
+  **  ----------------------------------------------------------------------------
+  **  A commercial use license is available from Genivia Inc., contact@genivia.com
+  **  ----------------------------------------------------------------------------
+  
+  Saving wsdlStub.h annotated copy of the source interface header file
+  Saving wsdlH.h serialization functions to #include in projects
+  Saving xmime.nsmap namespace mapping table
+  Saving wsdlC.cpp serialization functions
+  
+  Compilation successful 
+  
+cl : Linha de comando warning D9035: opção 'Gm' foi preterida e será removida em uma versão futura
+  wsp.cpp
+  wsdlC.cpp
+  wsdl2h.cpp
+  wsdl.cpp
+  wadl.cpp
+  types.cpp
+  stdsoap2.cpp
+  soap.cpp
+  service.cpp
+  schema.cpp
+  mime.cpp
+  bpel.cpp
+  Gerando Código...
+bpel.obj : warning LNK4075: ignorando '/EDITANDCONTINUE' devido a especificação '/SAFESEH'
+schema.obj : error LNK2019: símbolo externo indefinido _http_da referenciado na função "public: __thiscall xs__schema::xs__schema(void)" (??0xs__schema@@QAE@XZ)
+wsdl.obj : error LNK2001: símbolos externos indefinidos _http_da
+schema.obj : error LNK2019: símbolo externo indefinido _http_da_save referenciado na função "public: int __thiscall xs__schema::read(char const *,char const *,char const *)" (?read@xs__schema@@QAEHPBD00@Z)
+wsdl.obj : error LNK2001: símbolos externos indefinidos _http_da_save
+schema.obj : error LNK2019: símbolo externo indefinido _http_da_release referenciado na função "public: int __thiscall xs__schema::read(char const *,char const *,char const *)" (?read@xs__schema@@QAEHPBD00@Z)
+wsdl.obj : error LNK2001: símbolos externos indefinidos _http_da_release
+libcryptoMT.lib(cryptlib.obj) : error LNK2019: símbolo externo indefinido __imp__DeregisterEventSource@4 referenciado na função _OPENSSL_showfatal
+libcryptoMT.lib(cryptlib.obj) : error LNK2019: símbolo externo indefinido __imp__RegisterEventSourceW@8 referenciado na função _OPENSSL_showfatal
+libcryptoMT.lib(cryptlib.obj) : error LNK2019: símbolo externo indefinido __imp__ReportEventW@36 referenciado na função _OPENSSL_showfatal
+libcryptoMT.lib(cryptlib.obj) : error LNK2019: símbolo externo indefinido __imp__GetProcessWindowStation@0 referenciado na função _OPENSSL_isservice
+libcryptoMT.lib(cryptlib.obj) : error LNK2019: símbolo externo indefinido __imp__GetUserObjectInformationW@20 referenciado na função _OPENSSL_isservice
+libcryptoMT.lib(cryptlib.obj) : error LNK2019: símbolo externo indefinido __imp__MessageBoxW@16 referenciado na função _OPENSSL_showfatal
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptAcquireContextW@20 referenciado na função _capi_ctx_set_provname
+libcryptoMT.lib(rand_win.obj) : error LNK2001: símbolos externos indefinidos __imp__CryptAcquireContextW@20
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptReleaseContext@8 referenciado na função _capi_ctx_set_provname
+libcryptoMT.lib(rand_win.obj) : error LNK2001: símbolos externos indefinidos __imp__CryptReleaseContext@8
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptDestroyKey@4 referenciado na função _capi_dsa_free
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptSetHashParam@16 referenciado na função _capi_dsa_do_sign
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptGetProvParam@20 referenciado na função _capi_list_containers
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptGetUserKey@12 referenciado na função _capi_get_key
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptExportKey@24 referenciado na função _capi_get_pkey
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptDecrypt@24 referenciado na função _capi_rsa_priv_dec
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptCreateHash@20 referenciado na função _capi_dsa_do_sign
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptDestroyHash@4 referenciado na função _capi_dsa_do_sign
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptSignHashW@24 referenciado na função _capi_dsa_do_sign
+libcryptoMT.lib(e_capi.obj) : error LNK2019: símbolo externo indefinido __imp__CryptEnumProvidersW@24 referenciado na função _capi_get_provname
+libcryptoMT.lib(rand_win.obj) : error LNK2019: símbolo externo indefinido __imp__CryptGenRandom@12 referenciado na função _RAND_poll
+C:\Users\sandr\Desktop\gsoap_2.8.103\gsoap-2.8\gsoap\VisualStudio2005\wsdl2h\Debug\wsdl2h.exe : fatal error LNK1120: 22 externo não resolvidos
