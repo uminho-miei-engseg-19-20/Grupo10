@@ -34,6 +34,26 @@ class Soap_Operations {
 			return out;
 		}
 
+		static std::string base64_decode(const std::string &in) {
+
+			std::string out;
+
+			std::vector<int> T(256,-1);
+			for (int i=0; i<64; i++) T["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[i]] = i; 
+
+			int val=0, valb=-8;
+			for (uchar c : in) {
+				if (T[c] == -1) break;
+				val = (val<<6) + T[c];
+				valb += 6;
+				if (valb>=0) {
+					out.push_back(char((val>>valb)&0xFF));
+					valb-=8;
+				}
+			}
+			return out;
+		}
+
 		void replaceAll(std::string& str, const std::string& from, const std::string& to) {
 			if (from.empty())
 				return;
@@ -43,6 +63,7 @@ class Soap_Operations {
 				start_pos += to.length(); 
 			}
 		}
+		
 
 		vector<string> split_certificate(string result, string delimiter) {
 			std::string last;
@@ -103,13 +124,19 @@ class Soap_Operations {
 			return certificates;
 		}
 
+		string getRows(string result, string init, string end) {
+			unsigned first = result.find(init);
+			unsigned last = result.find(end);
+			string resultFinal = result.substr ((first)+init.length(),(last-first+1)-end.length());
+			return resultFinal;
+		}
+
 		vector<string> certccMovelSign(string applicationId, string userId, string pin, string docHash, string docName) {
 			std::string xml;
 			std::string SOAP_ACTION = "http://Ama.Authentication.Service/CCMovelSignature/CCMovelSign";
 			std::string encoded = base64_encode(applicationId);
 			std::string curl;
 			std::string result;
-			//std::string begin = "-----BEGIN CERTIFICATE-----";
 			vector<string> ccmovel;
 			xml.append("\"<soapenv:Envelope xmlns:soapenv=\\\"http://schemas.xmlsoap.org/soap/envelope/\\\">");
 			xml.append("   <soapenv:Body>");
@@ -139,11 +166,12 @@ class Soap_Operations {
 			curl.append(" ");
 			curl.append(stringUrl);
 			result = exec(curl.c_str());
+			
+			string process = getRows(result, "<a:ProcessId>", "</a:ProcessId>");
+			ccmovel.push_back(process);
 
-			// Ainda não sei o resultado que dá para tirar o desnecessário -> preciso o nome e o hashlib.256
-			//certificates = split_certificate(result, begin);
-			//certificates[0] = begin.append(certificates[0]);
-			//certificates[1] = begin.append(certificates[1]);
+			string code = getRows(result, "<a:Code>", "</a:Code>");
+			ccmovel.push_back(code);
 
 			return ccmovel;
 		}
@@ -164,9 +192,9 @@ class Soap_Operations {
 			xml.append("</ama:code>");
 			xml.append("<ama:processId>");
 			xml.append(processId);
-			xml.append("/<ama:processId>");
+			xml.append("</ama:processId>");
 			xml.append("<ama:applicationId>");
-			xml.append(applicationId);
+			xml.append(encoded);
 			xml.append("</ama:applicationId></ama:ValidateOtp></soapenv:Body></soapenv:Envelope>\"");
 
 			curl.append("curl --header \"Content-Type: text/xml\" --header \"SOAPAction: ");
@@ -178,10 +206,14 @@ class Soap_Operations {
 			curl.append(stringUrl);
 			result = exec(curl.c_str());
 
-			// Para realizar este é necessário o ccmovelsign
-			//certificates = split_certificate(result, begin);
-			//certificates[0] = begin.append(certificates[0]);
-			//certificates[1] = begin.append(certificates[1]);
+			string code = getRows(result, "<a:Code>", "</a:Code>");
+			validateOTP.push_back(code);
+
+			string message = getRows(result, "<a:Message>", "</a:Message>");
+			validateOTP.push_back(message);
+
+			string signature = getRows(result, "<a:Signature>", "</a:Signature>");
+			validateOTP.push_back(signature);
 
 			return validateOTP;
 		}
@@ -190,7 +222,7 @@ class Soap_Operations {
 			std::array<char, 128> buffer;
 			std::string result;
 
-			auto pipe = _popen(cmd, "r"); // get rid of shared_ptr
+			auto pipe = popen(cmd, "r"); // get rid of shared_ptr
 
 			if (!pipe) throw std::runtime_error("popen() failed!");
 
@@ -199,7 +231,7 @@ class Soap_Operations {
 					result += buffer.data();
 			}
 
-			auto rc = _pclose(pipe);
+			auto rc = pclose(pipe);
 
 			if (rc == EXIT_SUCCESS) { // == 0
 

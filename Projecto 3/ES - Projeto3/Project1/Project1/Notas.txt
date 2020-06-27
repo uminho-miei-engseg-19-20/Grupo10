@@ -1,9 +1,11 @@
 - O argparser já funciona:
-.Fazer test_cmd_wsdl -h dá a info geral
-.Fazer test_cmd_wsdl -h (gc,otp,...) dá info individual
-.Fazer test_cmd_wsdl gc "+351 914307721" dá os certificados
-.Para os outros métodos são necessárias bibliotecas criptográficas (ccmovelsign e validateotp)
-.Falta completar esses dois métodos e fazer o testAll
+.Fazer ./test_cmd_wsdl -h dá a info geral
+.Fazer ./test_cmd_wsdl -h (gc,otp,...) dá info individual
+.Fazer ./test_cmd_wsdl gc "+351 914307721" dá os certificados
 
-No meu test_cmd_wsdl.cpp usei o _popen por estar em windows
-Se te der erro tira o _ e deixa popen().
+.TestAll adicionado (Verificação da assinatura incompleta)
+
+Compilar: g++ -o test_cmd_wsdl test_cmd_wsdl.cpp -std=gnu++11 -lcrypto
+Correr: ./test_cmd_wsdl test LICENSE "+351 XXXXXXXXX" "XXXX"
+
+.Verificação ainda dá falsa -> perceber erro.

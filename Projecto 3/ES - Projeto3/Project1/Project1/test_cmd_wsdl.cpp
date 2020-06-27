@@ -3,6 +3,11 @@
 #include "cmd_soap_msg.h"
 #include "argparse.h"
 #include "cmd_config.h"
+#include "crypto.h"
+#include <fstream>
+#include <string>
+#include <streambuf>
+#include <stdlib.h>
 
 using namespace argparse;
 
@@ -105,6 +110,111 @@ int parseGC(int argc, const char* argv[]) {
 	
 }
 
+void testAll(string file, string user, string pin) {
+	std::cout << "test Command Line Program (for Preprod/Prod Signature CMD (SOAP) version 1.6 technical specification)" << std::endl;
+	std::cout << "version: 1.0" << std::endl;
+	std::cout << "\n" << "+++ Test All inicializado +++" << "\n" << std::endl;
+	std::cout << " 0% ... Leitura de argumentos da linha de comando - file: " << std::endl;
+	std::cout << "10% ... A contactar servidor SOAP CMD para operação GetCertificate" << std::endl;
+	Soap_Operations soap;
+	std::vector<std::string> certificates;
+	std::vector<std::string> cns;
+	certificates = soap.getcertificates(get_appid(), user);
+	if (certificates.empty()) {
+		std::cout << "Impossível obter certificado" << std::endl;
+		exit (EXIT_FAILURE);
+	}
+	const char* c1 = certificates[0].c_str();
+	const char* c2 = certificates[1].c_str();
+	const char* c3 = certificates[2].c_str();
+	OpenSSL_add_all_algorithms();
+	BIO *bio_mem1 = BIO_new(BIO_s_mem());
+	BIO *bio_mem2 = BIO_new(BIO_s_mem());
+	BIO *bio_mem3 = BIO_new(BIO_s_mem());
+	BIO_puts(bio_mem1, c1);
+	BIO_puts(bio_mem2, c2);
+	BIO_puts(bio_mem3, c3);
+	X509 * x509_1 = PEM_read_bio_X509(bio_mem1, NULL, NULL, NULL);
+	X509 * x509_2 = PEM_read_bio_X509(bio_mem2, NULL, NULL, NULL);
+	X509 * x509_3 = PEM_read_bio_X509(bio_mem3, NULL, NULL, NULL);
+	cns.push_back(parseCN(x509_1));
+	cns.push_back(parseCN(x509_2));
+	cns.push_back(parseCN(x509_3));
+	BIO_free(bio_mem1);
+	BIO_free(bio_mem2);
+	BIO_free(bio_mem3);
+	X509_free(x509_1);
+	X509_free(x509_2);
+	X509_free(x509_3);
+	std::cout << "20% ... Certificado emitido para \"" << cns[0] << "\" pela Entidade de Certificação \"" 
+	<< cns[2] << "\" na hierarquia do \"" << cns[1] << "\"" << "\n" << std::flush;
+	std::cout << "30% ... Leitura do ficheiro " << file << "\n" << std::flush;
+	std::ifstream readFile(file);
+	if(!readFile.is_open()) {
+		std::cout << "Ficheiro não encontrado." << std::endl;
+		exit (EXIT_FAILURE);
+	}
+	std::string file_content((std::istreambuf_iterator<char>(readFile)), std::istreambuf_iterator<char>());
+
+	std::cout << "40% ... Geração de hash do ficheiro " << file << "\n" << std::flush;
+ 	std::string hash = sha256(file);
+	std::string hashEnc = soap.base64_encode(hash);
+	
+	std::cout << "50% ... Hash gerada (em base64): " << hashEnc << "\n" << std::flush;
+	std::cout << "60% ... A contactar servidor SOAP CMD para operação CCMovelSign" << std::endl;
+
+	// res[0] -> ProcessId ; res[1] -> Code
+	std::vector<std::string> res = soap.certccMovelSign(get_appid(), user, pin, hashEnc, file);
+
+	if (res[1] != "200") {
+		std::cout << "Erro " << res[1] << ". Valide o PIN introduzido." << "\n" << std::flush;
+		exit (EXIT_FAILURE);
+	}
+
+	std::cout << "70% ... ProcessID devolvido pela operação CCMovelSign: " << res[0] << "\n" << std::flush;
+	std::cout << "80% ... A iniciar operação ValidateOtp" << std::endl;
+	std::string otp;
+	std::cout << "Introduza o OTP recebido no seu dispositivo: ";
+	std::cin >> otp;
+	std::cout << "90% ... A contactar servidor SOAP CMD para operação ValidateOtp" << std::endl;
+	
+	// res2[0] -> Code ; res2[1] -> Message ; res2[2] -> Signature
+	std::vector<std::string> res2 = soap.validateotp(get_appid(), otp, res[0]);
+
+	if (res2[0] != "200") {
+		std::cout << "Erro " << res2[0] << ". " << res2[1] << "\n" << std::flush;
+		exit (EXIT_FAILURE);
+	}
+
+	//std::string signEnc = soap.base64_encode(res2[2]);
+	auto chrs = res2[2].c_str();
+	auto val = reinterpret_cast<unsigned char*>(const_cast<char*>(chrs));
+	//const unsigned char *val= (unsigned char *) malloc(res[2].length()+1);
+	//strcpy((char *)val,res[2].c_str());
+	//unsigned char *cstr = &(res2[2])[0];
+	char* base64Text;
+	size_t encMessageLength = 256; //ta a bugar
+	Base64Encode(val, encMessageLength, &base64Text);
+	std::cout << "100% ... Assinatura (em base 64) devolvida pela operação ValidateOtp: " << base64Text << "\n" << std::flush;
+	std::cout << "110% ... A validar assinatura ..." << std::endl;
+
+	RSA* rsa;
+	BIO *bio_mem4 = BIO_new(BIO_s_mem());
+	BIO_puts(bio_mem4, certificates[0].c_str());
+	X509 * x509_4 = PEM_read_bio_X509(bio_mem4, NULL, NULL, NULL);
+	rsa = getPub(x509_4);
+	BIO_free(bio_mem4);
+	X509_free(x509_4);
+
+	std::cout << rsa << std::endl;
+
+	bool authentic = verifySignature(rsa, file_content, base64Text);
+
+	std::cout << authentic << std::endl;
+
+
+}
+
 int main(int argc, const char* argv[]) { 
 	ArgumentParser parser("test_cmd_wsdl {GetCertificate,gc,CCMovelSign,ms,CCMovelMultipleSign,mms,ValidateOtp,otp,TestAll,test} [h] [V]", "Argument parser");
 	parser.enable_help();
@@ -184,7 +294,14 @@ int main(int argc, const char* argv[]) {
 					std::vector<std::string> certificates;
 					certificates = soap.getcertificates(get_appid(), argv[2]);
 					std::cout << certificates[0] << certificates[1] << certificates[2] << std::endl;
+
 				}
+				
+				else if(arg == "test" || arg == "TestAll") {
+					testAll(argv[2], argv[3], argv[4]);
+				}
+
+			
 			}
 		}
 
