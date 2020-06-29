@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iterator>
+#include "base64.h"
 #include "cmd_soap_msg.h"
 #include "argparse.h"
 #include "cmd_config.h"
@@ -8,6 +9,7 @@
 #include <string>
 #include <streambuf>
 #include <stdlib.h>
+#include <typeinfo>
 
 using namespace argparse;
 
@@ -114,7 +116,7 @@ void testAll(string file, string user, string pin) {
 	std::cout << "test Command Line Program (for Preprod/Prod Signature CMD (SOAP) version 1.6 technical specification)" << std::endl;
 	std::cout << "version: 1.0" << std::endl;
 	std::cout << "\n" << "+++ Test All inicializado +++" << "\n" << std::endl;
-	std::cout << " 0% ... Leitura de argumentos da linha de comando - file: " << std::endl;
+	std::cout << " 0% ... Leitura de argumentos da linha de comando - file: " << file << " user: " << user << " pin: " << pin << "\n" << std::flush;
 	std::cout << "10% ... A contactar servidor SOAP CMD para operação GetCertificate" << std::endl;
 	Soap_Operations soap;
 	std::vector<std::string> certificates;
@@ -157,8 +159,8 @@ void testAll(string file, string user, string pin) {
 	std::string file_content((std::istreambuf_iterator<char>(readFile)), std::istreambuf_iterator<char>());
 
 	std::cout << "40% ... Geração de hash do ficheiro " << file << "\n" << std::flush;
- 	std::string hash = sha256(file);
-	std::string hashEnc = soap.base64_encode(hash);
+	std::vector<BYTE> hash = sha256(file_content);
+	std::string hashEnc = base64_encode(&hash[0], hash.size());
 	
 	std::cout << "50% ... Hash gerada (em base64): " << hashEnc << "\n" << std::flush;
 	std::cout << "60% ... A contactar servidor SOAP CMD para operação CCMovelSign" << std::endl;
@@ -186,15 +188,16 @@ void testAll(string file, string user, string pin) {
 		exit (EXIT_FAILURE);
 	}
 
-	//std::string signEnc = soap.base64_encode(res2[2]);
-	auto chrs = res2[2].c_str();
-	auto val = reinterpret_cast<unsigned char*>(const_cast<char*>(chrs));
-	//const unsigned char *val= (unsigned char *) malloc(res[2].length()+1);
-	//strcpy((char *)val,res[2].c_str());
-	//unsigned char *cstr = &(res2[2])[0];
+	std::vector<BYTE> msgbytebuffer(res2[2].length(), 0);
+	std::copy(res2[2].begin(), res2[2].end(), msgbytebuffer.begin());
+	//auto chrs = res2[2].c_str();
+	//auto val = reinterpret_cast<unsigned char*>(const_cast<char*>(chrs));
 	char* base64Text;
-	size_t encMessageLength = 256; //ta a bugar
-	Base64Encode(val, encMessageLength, &base64Text);
+	//size_t encMessageLength = 256; //ta a bugar
+	Base64Encode(&msgbytebuffer[0], msgbytebuffer.size(), &base64Text);
+	//std::string novo(base64Text);
+	//soap.replaceAll(novo, value, "");
+	//char* base64Text2 = &novo[0];
 	std::cout << "100% ... Assinatura (em base 64) devolvida pela operação ValidateOtp: " << base64Text << "\n" << std::flush;
 	std::cout << "110% ... A validar assinatura ..." << std::endl;
 

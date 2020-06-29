@@ -182,7 +182,6 @@ class Soap_Operations {
 			std::string encoded = base64_encode(applicationId);
 			std::string curl;
 			std::string result;
-			//std::string begin = "-----BEGIN CERTIFICATE-----";
 			vector<string> validateOTP;
 			xml.append("\"<soapenv:Envelope xmlns:soapenv=\\\"http://schemas.xmlsoap.org/soap/envelope/\\\" xmlns:ama=\\\"http://Ama.Authentication.Service/\\\">");
 			xml.append("   <soapenv:Body>");
@@ -219,7 +218,7 @@ class Soap_Operations {
 		}
 
 		std::string exec(const char* cmd) {
-			std::array<char, 128> buffer;
+			std::array<char, 100> buffer;
 			std::string result;
 
 			auto pipe = popen(cmd, "r"); // get rid of shared_ptr
@@ -227,7 +226,7 @@ class Soap_Operations {
 			if (!pipe) throw std::runtime_error("popen() failed!");
 
 			while (!feof(pipe)) {
-				if (fgets(buffer.data(), 128, pipe) != nullptr)
+				if (fgets(buffer.data(), 100, pipe) != nullptr)
 					result += buffer.data();
 			}
 
