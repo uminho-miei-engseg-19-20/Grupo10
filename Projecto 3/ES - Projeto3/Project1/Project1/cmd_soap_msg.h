@@ -34,26 +34,6 @@ class Soap_Operations {
 			return out;
 		}
 
-		static std::string base64_decode(const std::string &in) {
-
-			std::string out;
-
-			std::vector<int> T(256,-1);
-			for (int i=0; i<64; i++) T["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[i]] = i; 
-
-			int val=0, valb=-8;
-			for (uchar c : in) {
-				if (T[c] == -1) break;
-				val = (val<<6) + T[c];
-				valb += 6;
-				if (valb>=0) {
-					out.push_back(char((val>>valb)&0xFF));
-					valb-=8;
-				}
-			}
-			return out;
-		}
-
 		void replaceAll(std::string& str, const std::string& from, const std::string& to) {
 			if (from.empty())
 				return;
@@ -217,8 +197,19 @@ class Soap_Operations {
 			return validateOTP;
 		}
 
+		std::string getPub(std::string certificate) {
+			std::string result = "";
+			std::string aux1 = "openssl x509 -pubkey -noout -in /dev/sdin <<< \'";
+			std::string aux2 = "\' > stdout";
+			std::string aux3 = aux1.append(certificate);
+			std::string command = aux3.append(aux2);
+			std::cout << command << std::endl;
+			result = exec(command.c_str());
+			return result;
+		}
+
 		std::string exec(const char* cmd) {
-			std::array<char, 100> buffer;
+			std::array<char, 128> buffer;
 			std::string result;
 
 			auto pipe = popen(cmd, "r"); // get rid of shared_ptr
@@ -226,7 +217,7 @@ class Soap_Operations {
 			if (!pipe) throw std::runtime_error("popen() failed!");
 
 			while (!feof(pipe)) {
-				if (fgets(buffer.data(), 100, pipe) != nullptr)
+				if (fgets(buffer.data(), 128, pipe) != nullptr)
 					result += buffer.data();
 			}
 
