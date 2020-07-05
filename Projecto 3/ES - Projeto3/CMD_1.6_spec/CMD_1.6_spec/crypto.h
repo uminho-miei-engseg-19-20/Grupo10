@@ -62,19 +62,6 @@ std::map<string, string> subject(X509* x509)
 	return _subject_as_map(X509_get_subject_name(x509));
 }
 
-//----------------------------------------------------------------------
-int public_key_size(X509 *x509)
-{
-	EVP_PKEY *pkey = X509_get_pubkey(x509);
-	//int key_type = EVP_PKEY_type(pkey->type);
-	int keysize = -1; //or in bytes, RSA_size() DSA_size(), DH_size(), ECDSA_size();
-	//keysize = key_type == EVP_PKEY_RSA && pkey->pkey.rsa->n ? BN_num_bits(pkey->pkey.rsa->n) : keysize;
-	//keysize = key_type == EVP_PKEY_DSA && pkey->pkey.dsa->p ? BN_num_bits(pkey->pkey.dsa->p) : keysize;
-	//keysize = key_type == EVP_PKEY_DH && pkey->pkey.dh->p ? BN_num_bits(pkey->pkey.dh->p) : keysize;
-	//keysize = key_type == EVP_PKEY_EC ? EC_GROUP_get_degree(EC_KEY_get0_group(pkey->pkey.ec)) : keysize;
-	EVP_PKEY_free(pkey);
-	return keysize;
-}
 
 
 //----------------------------------------------------------------------
@@ -204,40 +191,10 @@ bool verifySignature(RSA* publicRSA, std::string plainText, char* signatureBase6
 
 RSA* getPub(X509* x509) {
 	X509* cert;
-	//BIO *certbio = NULL;
-	//BIO *outbio = NULL;
-	//int ret;
-	//certbio = BIO_new(BIO_s_file());
-	//outbio  = BIO_new_fp(stdout, BIO_NOCLOSE);
-	//ret = BIO_read_filename(certbio, x509);
-	//char * string = (char*)malloc(600*sizeof(char)); //bigger than I need
-	//setbuf(stdout, string);
-	//uint32_t size = 0;
-	//int rc;
 	EVP_PKEY* pubkey;
 	RSA* rsa;
-	//cert = d2i_x509(NULL, certificateDataBytes, length);
 	pubkey = X509_get_pubkey(x509);
-	//std::cout << outbio << std::endl;
-	//BIO_printf(outbio, "%d bit RSA Key\n\n", EVP_PKEY_bits(pubkey));
-	//PEM_read_bio_PUBKEY(outbio, pubkey, NULL, NULL);
-	//char* key1;
-	//key = X509_get_X509_PUBKEY(x509);
-	//std::cout << key << std::endl;
-	//BIO *bio_mem1 = BIO_new(BIO_s_mem());
-	//pubkey = PEM_read_bio_PUBKEY(bio_mem1, &pubkey, NULL, NULL);
-	//BIO_gets(bio_mem1, key1, 300);
 	rsa = EVP_PKEY_get1_RSA(pubkey);
-	//setbuf(stdout, NULL);
-	//PEM_write_bio_PUBKEY(outbio,pubkey);
-	//std::cout << "\n" << std::endl;
-	//std::cout << string << std::endl;
-	//std::cout << key1 << std::endl;
-	//PEM_write_bio_PUBKEY(outbio, pubkey) >> key;	//
-	//RSA_print_fp(stdout, rsa, 0);
-	//bio_to_
-	//RSA_free(rsa);
-	//std::cout << rsa << std::endl;
 	EVP_PKEY_free(pubkey);
 	return rsa;
 }
