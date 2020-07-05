@@ -101,8 +101,7 @@ bool RSAVerifySignature( RSA* rsa,
                          size_t MsgHashLen,
                          const char* Msg,
                          size_t MsgLen,
-                         bool* Authentic) {
-  MsgHashLen = 256;							 
+                         bool* Authentic) {							 
   *Authentic = false;
   EVP_PKEY* pubKey  = EVP_PKEY_new();
   EVP_PKEY_assign_RSA(pubKey, rsa);
