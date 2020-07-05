@@ -128,7 +128,6 @@ bool RSAVerifySignature( RSA* rsa,
       return false;
   }
   int AuthStatus = EVP_DigestVerifyFinal(m_RSAVerifyCtx, MsgHash, MsgHashLen);
-  std::cout << AuthStatus << std::endl;
   if (AuthStatus==1) {
     *Authentic = true;
     EVP_MD_CTX_cleanup(m_RSAVerifyCtx);
@@ -189,32 +188,6 @@ void Base64Decode(const char* b64message, unsigned char** buffer, size_t* length
 }
 
 
- 
-bool verify(RSA* rsa_pubkey, unsigned char* digest, unsigned char* buffer, unsigned bytes)
-{
-
- 
-    // Read public key from file
-    //RSA* rsa_pubkey = PEM_read_RSA_PUBKEY(pubkey, NULL, NULL, NULL);
- 
-    // Decrypt signature (in buffer) and verify it matches
-    // with the digest calculated from data file.
-    int result = RSA_verify(NID_sha256, digest, SHA256_DIGEST_LENGTH,
-                            buffer, bytes, rsa_pubkey);
-    std::cout << result << std::endl;
-    RSA_free(rsa_pubkey);
- 
-    if(result == 1)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-
 bool verifySignature(RSA* publicRSA, std::string plainText, char* signatureBase64) {
   unsigned char* encMessage;
   size_t encMessageLength;
@@ -224,8 +197,6 @@ bool verifySignature(RSA* publicRSA, std::string plainText, char* signatureBase6
   encMessage = &decode[0];
   encMessageLength = decode.size();
   bool result = RSAVerifySignature(publicRSA, encMessage, encMessageLength, plainText.c_str(), plainText.length(), &authentic);
-  std::cout << result << std::endl;
-  std::cout << authentic << std::endl;
   return result & authentic;
 }
 

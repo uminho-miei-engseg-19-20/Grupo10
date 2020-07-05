@@ -10,6 +10,7 @@
 #include <streambuf>
 #include <stdlib.h>
 #include <typeinfo>
+#include "crypto_tentativa.h"
 
 using namespace argparse;
 
@@ -88,7 +89,10 @@ int parseMMS(int argc, const char* argv[]) {
 
 int parseMS(int argc, const char* argv[]) {
 
-	ArgumentParser parser("test_cmd_wsdl CCMovelSign [-h] [-applicationId APPLICATIONID] [-prod] [-D] user pin", "test");
+	ArgumentParser parser("test_cmd_wsdl CCMovelSign [-h] [-applicationId APPLICATIONID] [-prod] [-D] file user pin", "test");
+	parser.add_argument()
+		.names({ "file" })
+		.description("file input name (optional)");
 	parser.add_argument()
 		.names({ "user" })
 		.description("user phone number (+XXX NNNNNNNNN)");
@@ -102,7 +106,7 @@ int parseMS(int argc, const char* argv[]) {
 
 int parseGC(int argc, const char* argv[]) {
 
-	ArgumentParser parser("test_cmd_wsdl GetCertificate [-h] [-applicationId APPLICATIONID] [-prod] [-D] user pin", "test");
+	ArgumentParser parser("test_cmd_wsdl GetCertificate [-h] [-applicationId APPLICATIONID] [-prod] [-D] user", "test");
 	parser.add_argument()
 		.names({ "user" })
 		.description("user phone number (+XXX NNNNNNNNN)");
@@ -123,10 +127,7 @@ void testAll(string file, string user, string pin) {
 	std::vector<std::string> certificates;
 	std::vector<std::string> cns;
 	certificates = soap.getcertificates(get_appid(), user);
-	if (certificates.empty()) {
-		std::cout << "Impossível obter certificado" << std::endl;
-		exit (EXIT_FAILURE);
-	}
+
 	const char* c1 = certificates[0].c_str();
 	const char* c2 = certificates[1].c_str();
 	const char* c3 = certificates[2].c_str();
@@ -170,11 +171,6 @@ void testAll(string file, string user, string pin) {
 	// res[0] -> ProcessId ; res[1] -> Code
 	std::vector<std::string> res = soap.certccMovelSign(get_appid(), user, pin, hashEnc, file);
 
-	if (res[1] != "200") {
-		std::cout << "Erro " << res[1] << ". Valide o PIN introduzido." << "\n" << std::flush;
-		exit (EXIT_FAILURE);
-	}
-
 	std::cout << "70% ... ProcessID devolvido pela operação CCMovelSign: " << res[0] << "\n" << std::flush;
 	std::cout << "80% ... A iniciar operação ValidateOtp" << std::endl;
 	std::string otp;
@@ -184,11 +180,6 @@ void testAll(string file, string user, string pin) {
 	
 	// res2[0] -> Code ; res2[1] -> Message ; res2[2] -> Signature
 	std::vector<std::string> res2 = soap.validateotp(get_appid(), otp, res[0]);
-
-	if (res2[0] != "200") {
-		std::cout << "Erro " << res2[0] << ". " << res2[1] << "\n" << std::flush;
-		exit (EXIT_FAILURE);
-	}
 	
 	std::string signature = res2[2];
 
@@ -203,11 +194,13 @@ void testAll(string file, string user, string pin) {
 	BIO_free(bio_mem4);
 	X509_free(x509_4);
 
-	std::cout << rsa << std::endl;
-
 	char* signEnc = &signature[0];
 
+	// Tentativa 1
 	bool authentic = verifySignature(rsa, file_content, signEnc);
+
+	// Tentativa 2
+	bool result = verify_request_signature(rsa, file_content, signature);
 
 	if (authentic == 1) {
 		std::cout << "Assinatura verificada com sucesso, baseada na assinatura recebida, na hash gerada e " << "\n" << "na chave pública do certificado de " << cns[0] << "\n" << std::flush;
@@ -291,23 +284,20 @@ int main(int argc, const char* argv[]) {
 				return 0;
 			}
 
-			else if (argc > 3) {
+			else if (argc > 2) {
 				std::string arg = argv[1];
-				if (arg == "gc" || arg == "GetCertificate") {
+				if ((arg == "gc" || arg == "GetCertificate") && argc == 3) {
 					Soap_Operations soap;
 					std::vector<std::string> certificates;
 					certificates = soap.getcertificates(get_appid(), argv[2]);
 					std::cout << certificates[0] << certificates[1] << certificates[2] << std::endl;
-
-					std::string result = soap.getPub(certificates[0]);
-
 				}
 				
 				else if(arg == "test" || arg == "TestAll") {
 					testAll(argv[2], argv[3], argv[4]);
 				}
 
-				else if(arg == "ms" || arg == "CCMovelSign") {
+				else if((arg == "ms" || arg == "CCMovelSign") && argc==5) {
 					Soap_Operations soap;
 					std::ifstream readFile(argv[2]);
 					if(!readFile.is_open()) {
@@ -320,31 +310,25 @@ int main(int argc, const char* argv[]) {
 					std::string hashEnc = base64_encode(&hash[0], hash.size());
 					std::vector<std::string> res = soap.certccMovelSign(get_appid(), argv[3], argv[4], hashEnc, argv[2]);
 
-					if (res[1] != "200") {
-						std::cout << "Erro " << res[1] << ". Valide o PIN introduzido." << "\n" << std::flush;
-						exit (EXIT_FAILURE);
-					}
+					std::cout << "ProcessID devolvido pela operação CCMovelSign: " << res[0] << "\n" << std::flush;
+
+				}
+
+				else if((arg == "ms" || arg == "CCMovelSign") && argc==4) {
+					Soap_Operations soap;
+					std::string empty = "docname teste";
+
+					std::vector<BYTE> hash = sha256("Nobody inspects the spammish repetition");
+					std::string hashEnc = base64_encode(&hash[0], hash.size());
+					std::vector<std::string> res = soap.certccMovelSign(get_appid(), argv[2], argv[3], hashEnc, empty);
 
 					std::cout << "ProcessID devolvido pela operação CCMovelSign: " << res[0] << "\n" << std::flush;
 
 				}
 
-				else if(arg == "otp" || arg == "ValidateOtp") {
+				else if(arg == "otp" || arg == "ValidateOtp" && argc == 4) {
 					Soap_Operations soap;
-					std::string otp;
-					std::string processId;
-					std::cout << "Introduza o processId associado: ";
-					std::cin >> processId;
-
-					std::cout << "Introduza o OTP recebido no seu dispositivo: ";
-					std::cin >> otp;
-
-					std::vector<std::string> res2 = soap.validateotp(get_appid(), otp, processId);
-
-					if (res2[0] != "200") {
-						std::cout << "Erro " << res2[0] << ". " << res2[1] << "\n" << std::flush;
-						exit (EXIT_FAILURE);
-					}
+					std::vector<std::string> res2 = soap.validateotp(get_appid(), argv[2], argv[3]);
 
 					std::cout << "O OTP foi validado!" << std::endl;
 
@@ -353,7 +337,7 @@ int main(int argc, const char* argv[]) {
 				else {
 					std::cout << "usage: test_cmd_wsdl.py [-h] [-V]" << std::endl;
 					std::cout << "		" << "{GetCertificate,gc,CCMovelSign,ms,CCMovelMultipleSign,mms,ValidateOtp,otp,TestAll,test}" << std::endl;
-					std::cout << argv[0] << ": invalid choice: " << argv[1] << " (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
+					std::cout << argv[0] << ": invalid choice or arguments: (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
 				}
 
 			
@@ -371,14 +355,14 @@ int main(int argc, const char* argv[]) {
 				else {
 					std::cout << "usage: test_cmd_wsdl.py [-h] [-V]" << std::endl;
 					std::cout << "		" << "{GetCertificate,gc,CCMovelSign,ms,CCMovelMultipleSign,mms,ValidateOtp,otp,TestAll,test}" << std::endl;
-					std::cout << argv[0] << ": invalid choice: (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
+					std::cout << argv[0] << ": invalid choice or arguments: (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
 					return 0;
 				}
 			}
 			else {
 				std::cout << "usage: test_cmd_wsdl.py [-h] [-V]" << std::endl;
 				std::cout << "		" << "{GetCertificate,gc,CCMovelSign,ms,CCMovelMultipleSign,mms,ValidateOtp,otp,TestAll,test}" << std::endl;
-				std::cout << argv[0] << ": invalid choice: (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
+				std::cout << argv[0] << ": invalid choice or arguments: (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
 				return 0;
 			}
 
@@ -392,7 +376,7 @@ int main(int argc, const char* argv[]) {
 					|| arg != "mms" && arg != "ValidateOtp" && arg != "otp" && arg != "TestAll" && arg != "test") {
 						std::cout << "usage: test_cmd_wsdl.py [-h] [-V]" << std::endl;
 						std::cout << "		" << "{GetCertificate,gc,CCMovelSign,ms,CCMovelMultipleSign,mms,ValidateOtp,otp,TestAll,test}" << std::endl;
-						std::cout << argv[0] << ": invalid choice: " << argv[1] << " (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
+						std::cout << argv[0] << ": invalid choice or arguments: (choose from 'GetCertificate', 'gc', 'CCMovelSign', 'ms', 'CCMovelMultipleSign', 'mms', 'ValidateOtp', 'otp', 'TestAll', 'test')" << std::endl;
 						return 0;
 	
 					}

@@ -69,6 +69,10 @@ class Soap_Operations {
 
 
 		vector<string> getcertificates(string applicationId, string userId) {
+			if (userId.find(' ') == std::string::npos || userId.find('+') == std::string::npos) {
+				std::cout << "Failed entering a valid phone number." << std::endl;
+				exit (EXIT_FAILURE);
+			}
 			std::string xml;
 			std::string SOAP_ACTION = "http://Ama.Authentication.Service/CCMovelSignature/GetCertificate";
 			std::string encoded = base64_encode(applicationId);
@@ -101,6 +105,13 @@ class Soap_Operations {
 			certificates[0] = begin.append(certificates[0]);
 			certificates[1] = begin2.append(certificates[1]);
 
+			
+			if (certificates.empty()) {
+				std::cout << "Impossível obter certificado." << std::endl;
+				exit (EXIT_FAILURE);
+			}
+
+
 			return certificates;
 		}
 
@@ -111,7 +122,15 @@ class Soap_Operations {
 			return resultFinal;
 		}
 
+		bool is_number(const std::string& s)
+		{
+			std::string::const_iterator it = s.begin();
+			while (it != s.end() && std::isdigit(*it)) ++it;
+			return !s.empty() && it == s.end();
+		}
+
 		vector<string> certccMovelSign(string applicationId, string userId, string pin, string docHash, string docName) {
+
 			std::string xml;
 			std::string SOAP_ACTION = "http://Ama.Authentication.Service/CCMovelSignature/CCMovelSign";
 			std::string encoded = base64_encode(applicationId);
@@ -153,10 +172,25 @@ class Soap_Operations {
 			string code = getRows(result, "<a:Code>", "</a:Code>");
 			ccmovel.push_back(code);
 
+			if (ccmovel[1] != "200") {
+				std::cout << "Erro " << ccmovel[1] << ". Valide o PIN introduzido." << "\n" << std::flush;
+				exit (EXIT_FAILURE);
+			}
+
 			return ccmovel;
 		}
 
 		vector<string> validateotp(string applicationId, string otp, string processId) {
+			if(!is_number(otp) && otp.size() != 6) {
+				std::cout << "Failed entering a valid otp." << std::endl;
+				exit (EXIT_FAILURE);
+			}
+
+			if (processId.find('-') == std::string::npos) {
+				std::cout << "Failed entering a valid process id." << std::endl;
+				exit (EXIT_FAILURE);
+			}
+
 			std::string xml;
 			std::string SOAP_ACTION = "http://Ama.Authentication.Service/CCMovelSignature/ValidateOtp";
 			std::string encoded = base64_encode(applicationId);
@@ -183,6 +217,7 @@ class Soap_Operations {
 			curl.append(xml);
 			curl.append(" ");
 			curl.append(stringUrl);
+
 			result = exec(curl.c_str());
 
 			string code = getRows(result, "<a:Code>", "</a:Code>");
@@ -191,22 +226,17 @@ class Soap_Operations {
 			string message = getRows(result, "<a:Message>", "</a:Message>");
 			validateOTP.push_back(message);
 
+			if (validateOTP[0] != "200") {
+				std::cout << "Erro " << validateOTP[0] << ". " << validateOTP[1] << ".\n" << std::flush;
+				exit (EXIT_FAILURE);
+			}
+
 			string signature = getRows(result, "<a:Signature>", "</a:Signature>");
 			validateOTP.push_back(signature);
 
 			return validateOTP;
 		}
 
-		std::string getPub(std::string certificate) {
-			std::string result = "";
-			std::string aux1 = "openssl x509 -pubkey -noout -in /dev/sdin <<< \'";
-			std::string aux2 = "\' > stdout";
-			std::string aux3 = aux1.append(certificate);
-			std::string command = aux3.append(aux2);
-			std::cout << command << std::endl;
-			result = exec(command.c_str());
-			return result;
-		}
 
 		std::string exec(const char* cmd) {
 			std::array<char, 128> buffer;
