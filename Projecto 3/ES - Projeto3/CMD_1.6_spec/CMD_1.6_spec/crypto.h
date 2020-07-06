@@ -191,10 +191,10 @@ bool verifySignature(RSA* publicRSA, std::string plainText, char* signatureBase6
 RSA* getPub(X509* x509) {
 	X509* cert;
 	EVP_PKEY* pubkey;
-	RSA* rsa;
+	RSA* rsa = RSA_new();
 	pubkey = X509_get_pubkey(x509);
 	rsa = EVP_PKEY_get1_RSA(pubkey);
-	EVP_PKEY_free(pubkey);
+	//EVP_PKEY_free(pubkey);
 	return rsa;
 }
 

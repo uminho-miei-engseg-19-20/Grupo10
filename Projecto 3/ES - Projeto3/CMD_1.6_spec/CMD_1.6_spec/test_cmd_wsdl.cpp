@@ -43,7 +43,7 @@ int opt(int argc, const char* argv[]) {
 
 int parseTEST(int argc, const char* argv[]) {
 
-	ArgumentParser parser("test_cmd_wsdl TestAll [-h] [-applicationId APPLICATIONID] [-prod] [-D] user pin", "test");
+	ArgumentParser parser("test_cmd_wsdl TestAll [-h] [-applicationId APPLICATIONID] [-prod] [-D] file user pin", "test");
 	parser.add_argument()
 		.names({ "file" })
 		.description("file");
@@ -60,7 +60,7 @@ int parseTEST(int argc, const char* argv[]) {
 
 int parseOTP(int argc, const char* argv[]) {
 
-	ArgumentParser parser("test_cmd_wsdl ValidateOtp [-h] [-applicationId APPLICATIONID] [-prod] [-D] user pin", "test");
+	ArgumentParser parser("test_cmd_wsdl ValidateOtp [-h] [-applicationId APPLICATIONID] [-prod] [-D] OTP ProcessId", "test");
 	parser.add_argument()
 		.names({ "OTP" })
 		.description("OTP received in your device");
@@ -131,7 +131,7 @@ void testAll(string file, string user, string pin) {
 	const char* c1 = certificates[0].c_str();
 	const char* c2 = certificates[1].c_str();
 	const char* c3 = certificates[2].c_str();
-	OpenSSL_add_all_algorithms();
+
 	BIO *bio_mem1 = BIO_new(BIO_s_mem());
 	BIO *bio_mem2 = BIO_new(BIO_s_mem());
 	BIO *bio_mem3 = BIO_new(BIO_s_mem());
@@ -202,7 +202,8 @@ void testAll(string file, string user, string pin) {
 	// Tentativa 2
 	bool result = verify_request_signature(rsa, file_content, signature);
 
-	if (authentic == 1) {
+
+	if (authentic == 1 || result == 1) {
 		std::cout << "Assinatura verificada com sucesso, baseada na assinatura recebida, na hash gerada e " << "\n" << "na chave pública do certificado de " << cns[0] << "\n" << std::flush;
 	}
 	else {
@@ -345,7 +346,10 @@ int main(int argc, const char* argv[]) {
 		}
 
 		else if (parser.exists("V")) {
-			if (argc <= 3 && argc > 1) {
+			if (argc == 2) {
+				std::cout << "version: 1.0" << std::endl;
+			}
+			else if (argc <= 3 && argc > 1) {
 				std::string arg = argv[1];
 				if (arg == "GetCertificate" || arg == "gc" || arg == "CCMovelSign" || arg == "ms" || arg == "CCMovelMultipleSign"
 				|| arg == "mms" || arg == "ValidateOtp" || arg == "otp" || arg == "TestAll" || arg == "test") {

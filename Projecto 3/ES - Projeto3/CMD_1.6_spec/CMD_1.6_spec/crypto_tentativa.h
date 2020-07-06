@@ -84,9 +84,6 @@ bool verify_request_signature(RSA* rsa, const string body, const string sig)
   unsigned char body_digest[SHA256_DIGEST_LENGTH];
   SHA256(body_buf, body_len, body_digest);
 
-  cout << ansii_color_str("[DIGEST]", 33) << " "
-       << hex_str(body_digest, SHA256_DIGEST_LENGTH)
-       << endl;
 
   // Verify the request body's signature
   int res = RSA_verify(
